@@ -4,9 +4,11 @@ const qrcode = require('qrcode-terminal');
 const fs = require('fs');
 const path = require('path');
 const Customer = require('../models/Customer');
+const puppeteer = require('puppeteer-core'); // Use puppeteer-core
+const chromium = require('@sparticuz/chromium');
 const multimediaService = require('./multimedia');
 const aiAgentBridge = require('./ai-agent-bridge'); // الجسر الذكي الجديد
-
+const os = require('os');
 class WhatsAppUnifiedService {
   constructor() {
     this.client = null;
@@ -14,7 +16,8 @@ class WhatsAppUnifiedService {
     this.isReady = false;
     this.reconnectAttempts = 0;
     this.maxReconnectAttempts = 5;
-    
+    this.isInitializing = false;
+this.isResetting = false;
     // Configuration محسنة
     this.config = {
       enableAutoReply: true,
@@ -111,30 +114,35 @@ class WhatsAppUnifiedService {
     this.config = { ...this.config, ...newSettings };
     console.log('🔧 Settings updated:', this.config);
   }
-
-  // إنشاء العميل
+  
   async initializeClient() {
+    if (this.isInitializing) {
+      console.log('🚀 Client initialization already in progress. Skipping.');
+      return this.client;
+    }
+    this.isInitializing = true;
+    this.isReady = false; // Explicitly set to false
+    this.qrCode = null;   // Explicitly set to null
+  
     try {
       console.log('🚀 Initializing Enhanced WhatsApp Client with Smart AI Bridge...');
       
       this.client = new Client({
-        authStrategy: new LocalAuth({ 
-          dataPath: path.join(__dirname, '../.wwebjs_auth'),
+        authStrategy: new LocalAuth({
+          // Vercel has a writable /tmp directory
+          dataPath: path.join(os.tmpdir(), '.wwebjs_auth_user'), // Changed path
           clientId: 'whatsapp-smart-agent'
         }),
         puppeteer: {
-          headless: process.env.NODE_ENV === 'production',
-          executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
+          headless: chromium.headless, // Use chromium.headless
+          executablePath: await chromium.executablePath(), // Crucial for Vercel
           args: [
+            ...chromium.args, // Use recommended args
             '--no-sandbox',
             '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage', // Often needed in constrained environments
             '--disable-gpu',
-            '--disable-extensions',
-            '--disable-dev-shm-usage',
-            '--window-size=1280,800',
-            '--disable-background-timer-throttling',
-            '--disable-backgrounding-occluded-windows',
-            '--disable-renderer-backgrounding'
+            '--window-size=1280,800'
           ],
           timeout: 120000
         },
@@ -592,24 +600,39 @@ class WhatsAppUnifiedService {
 
   // إعادة تعيين العميل
   async resetClient() {
+    if (this.isResetting) {
+      console.log('🔄 Client reset already in progress. Skipping.');
+      return;
+    }
+    this.isResetting = true;
+  
     try {
       console.log('🔄 Resetting WhatsApp client...');
-      
       if (this.client) {
-        await this.client.destroy();
+        try {
+          console.log('Attempting to destroy existing client...');
+          await this.client.destroy();
+          console.log('Existing client destroyed.');
+        } catch (destroyError) {
+          console.error('Error destroying client during reset:', destroyError.message, destroyError.stack);
+          // Even if destroy fails, proceed to nullify and re-initialize
+        }
       }
-      
       this.client = null;
       this.isReady = false;
       this.qrCode = null;
       this.reconnectAttempts = 0;
-      
-      await new Promise(resolve => setTimeout(resolve, 5000));
-      
+  
+      // Shorter delay before re-initializing
+      await new Promise(resolve => setTimeout(resolve, 2000));
+  
       return await this.initializeClient();
     } catch (error) {
-      console.error('Error resetting client:', error);
-      throw error;
+      console.error('Error in resetClient process:', error.message);
+      // this.isReady will be false, client is null
+      throw error; // Re-throw to be caught by the route handler
+    } finally {
+      this.isResetting = false;
     }
   }
 

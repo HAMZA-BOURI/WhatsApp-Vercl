@@ -306,32 +306,31 @@ app.get('/api/whatsapp-status', (req, res) => {
 app.post('/api/refresh-qr', async (req, res) => {
   try {
     console.log('🔄 QR Code refresh requested...');
-    
-    const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('QR refresh timeout')), 30000)
-    );
-    
-    const refreshPromise = whatsappService.resetClient();
-    
-    await Promise.race([refreshPromise, timeoutPromise]);
-    
+    await whatsappService.resetClient(); // Ensure this fully completes or throws
+
+    // Wait a bit longer for the 'qr' event to populate whatsappService.qrCodeData
+    // This part is still a workaround; event-driven would be better.
     setTimeout(() => {
       const qr = whatsappService.qrCodeData;
       if (qr) {
         res.json({ success: true, qr: qr });
+      } else if (whatsappService.isClientReady) {
+         // If client became ready without a QR (e.g., session restored)
+         res.json({ success: true, message: "Client is ready, no QR code needed." });
       } else {
-        res.json({ 
-          success: false, 
-          message: 'QR code not generated yet. Please try again in a few seconds.' 
+        console.warn('QR code not available after reset attempt.');
+        res.status(503).json({ // Service Unavailable might be more appropriate
+          success: false,
+          message: 'QR code not generated after reset. Client might be initializing or an error occurred.'
         });
       }
-    }, 5000);
-    
+    }, 8000); // Increased wait time to 8 seconds for Vercel's potentially slower environment
+
   } catch (error) {
-    console.error('Error refreshing QR code:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: error.message 
+    console.error('Error in /api/refresh-qr:', error.message);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to refresh QR code due to an internal error.'
     });
   }
 });
