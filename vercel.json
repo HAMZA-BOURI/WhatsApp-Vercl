@@ -2,30 +2,23 @@
   "version": 2,
   "builds": [
     {
-      "src": "vercel.js",
+      "src": "api/index.js",
       "use": "@vercel/node"
-    },
-    {
-      "src": "public/**",
-      "use": "@vercel/static"
     }
   ],
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "vercel.js"
-    },
-    {
-      "src": "/(.*\\.(js|css|jpg|jpeg|png|gif|ico|svg|webp))",
-      "dest": "public/$1"
+      "dest": "/api/index.js"
     },
     {
       "src": "/(.*)",
-      "dest": "vercel.js"
+      "dest": "/api/index.js"
     }
   ],
   "env": {
-    "NODE_ENV": "production"
-  },
-  "buildCommand": "npm run vercel-build"
+    "NODE_ENV": "production",
+    "MONGO_URI": "mongodb+srv://hbourijob:ErZT8wgUU79YN9k6@whatsapp.w3aljrr.mongodb.net/?retryWrites=true&w=majority&appName=whatsapp",
+    "WEBSITE_URL": "https://your-actual-vercel-url.vercel.app"
+  }
 }
