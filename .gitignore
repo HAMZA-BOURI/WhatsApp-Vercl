@@ -59,3 +59,4 @@ desktop.ini
 # Puppeteer cache
 .local-chromium/
 backend/whatsapp-sender/node_modules/puppeteer-core/.local-chromium/
+.vercel
