@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test d'Intelligence Artificielle</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #4CAF50;
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, textarea, button {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+        }
+        .loading {
+            text-align: center;
+            display: none;
+        }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: #4CAF50;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .response-box {
+            white-space: pre-wrap;
+            background-color: #f0f8ff;
+            padding: 10px;
+            border-left: 3px solid #4CAF50;
+        }
+        .meta-info {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 10px;
+        }
+        .language-tag {
+            display: inline-block;
+            background-color: #e1f5fe;
+            padding: 2px 6px;
+            border-radius: 3px;
+            margin-right: 5px;
+        }
+        .intent-tag {
+            display: inline-block;
+            background-color: #e8f5e9;
+            padding: 2px 6px;
+            border-radius: 3px;
+            margin-right: 5px;
+            margin-bottom: 5px;
+        }
+        .ai-tag {
+            background-color: #4CAF50;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 3px;
+        }
+        .history {
+            margin-top: 30px;
+        }
+        .history-item {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 4px;
+            position: relative;
+        }
+        .user-message {
+            background-color: #e1f5fe;
+            text-align: right;
+            margin-left: 20%;
+        }
+        .bot-message {
+            background-color: #e8f5e9;
+            margin-right: 20%;
+        }
+        .history-meta {
+            font-size: 0.7em;
+            color: #666;
+            position: absolute;
+            bottom: 2px;
+            right: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Test d'Intelligence Artificielle</h1>
+        
+        <div class="form-group">
+            <label for="message">Message à tester:</label>
+            <textarea id="message" placeholder="Entrez votre message ici..."></textarea>
+        </div>
+        
+        <div class="form-group">
+            <label for="customerName">Nom du client (optionnel):</label>
+            <input type="text" id="customerName" placeholder="Nom du client">
+        </div>
+        
+        <button id="testButton" onclick="testAI()">Tester l'IA</button>
+        
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>Traitement en cours...</p>
+        </div>
+        
+        <div id="result" class="result" style="display: none;">
+            <h3>Réponse:</h3>
+            <div id="responseBox" class="response-box"></div>
+            
+            <div class="meta-info">
+                <p>
+                    <strong>Source:</strong> <span id="aiGenerated" class="ai-tag">?</span>
+                </p>
+                <p>
+                    <strong>Langue détectée:</strong> <span id="detectedLanguage" class="language-tag">?</span>
+                </p>
+                <p>
+                    <strong>Intentions détectées:</strong>
+                    <div id="detectedIntents"></div>
+                </p>
+            </div>
+        </div>
+        
+        <div id="history" class="history">
+            <h3>Historique de la conversation:</h3>
+            <!-- Les messages s'afficheront ici -->
+        </div>
+    </div>
+
+    <script>
+        // Historique pour simuler une conversation
+        let conversationHistory = [];
+        
+        async function testAI() {
+            const message = document.getElementById('message').value.trim();
+            
+            if (!message) {
+                alert('Veuillez entrer un message à tester');
+                return;
+            }
+            
+            const customerName = document.getElementById('customerName').value.trim();
+            
+            // Afficher le loader
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('result').style.display = 'none';
+            
+            try {
+                // Ajouter le message à l'historique
+                conversationHistory.push({
+                    role: 'user',
+                    content: message,
+                    timestamp: new Date()
+                });
+                updateHistoryDisplay();
+                
+                const response = await fetch('/api/test/test-ai', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        customerInfo: {
+                            name: customerName || 'Test Client',
+                            messageCount: conversationHistory.filter(msg => msg.role === 'user').length,
+                            isTest: true
+                        }
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Mettre à jour l'affichage des résultats
+                    document.getElementById('responseBox').textContent = data.result.response;
+                    document.getElementById('aiGenerated').textContent = data.result.aiGenerated ? 'IA' : 'Fallback';
+                    document.getElementById('aiGenerated').style.backgroundColor = data.result.aiGenerated ? '#4CAF50' : '#FF9800';
+                    document.getElementById('detectedLanguage').textContent = data.result.language;
+                    
+                    // Afficher les intentions détectées
+                    const intentsDiv = document.getElementById('detectedIntents');
+                    intentsDiv.innerHTML = '';
+                    
+                    for (const [intent, value] of Object.entries(data.result.intents)) {
+                        if (value) {
+                            const intentTag = document.createElement('span');
+                            intentTag.className = 'intent-tag';
+                            intentTag.textContent = intent.replace('is', '');
+                            intentsDiv.appendChild(intentTag);
+                        }
+                    }
+                    
+                    // Ajouter la réponse à l'historique
+                    conversationHistory.push({
+                        role: 'assistant',
+                        content: data.result.response,
+                        timestamp: new Date()
+                    });
+                    updateHistoryDisplay();
+                    
+                    // Réinitialiser le champ de message
+                    document.getElementById('message').value = '';
+                } else {
+                    alert('Erreur: ' + data.message);
+                }
+            } catch (error) {
+                console.error('Erreur lors du test de l\'IA:', error);
+                alert('Erreur lors du test de l\'IA. Consultez la console pour plus de détails.');
+            } finally {
+                // Cacher le loader et afficher les résultats
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('result').style.display = 'block';
+            }
+        }
+        
+        function updateHistoryDisplay() {
+            const historyDiv = document.getElementById('history');
+            
+            // Effacer l'historique existant à l'exception du titre
+            while (historyDiv.childNodes.length > 2) {
+                historyDiv.removeChild(historyDiv.lastChild);
+            }
+            
+            // Afficher l'historique
+            conversationHistory.forEach(entry => {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'history-item ' + (entry.role === 'user' ? 'user-message' : 'bot-message');
+                
+                messageDiv.textContent = entry.content;
+                
+                const metaDiv = document.createElement('div');
+                metaDiv.className = 'history-meta';
+                metaDiv.textContent = new Date(entry.timestamp).toLocaleTimeString();
+                
+                messageDiv.appendChild(metaDiv);
+                historyDiv.appendChild(messageDiv);
+            });
+        }
+        
+        // Permettre l'envoi du message avec la touche Entrée
+        document.getElementById('message').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                testAI();
+            }
+        });
+    </script>
+</body>
+</html>

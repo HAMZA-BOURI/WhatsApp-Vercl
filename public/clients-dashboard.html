@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>اختبار المحادثات مع الذاكرة - WhatsApp AI Bot</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .card {
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.95);
+            margin-bottom: 20px;
+        }
+
+        .chat-container {
+            height: 500px;
+            overflow-y: auto;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 15px;
+            background: #f8f9fa;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .user-message {
+            text-align: left;
+        }
+
+        .user-message .message-bubble {
+            background: #007bff;
+            color: white;
+            padding: 12px 18px;
+            border-radius: 18px 18px 4px 18px;
+            display: inline-block;
+            max-width: 70%;
+            margin-left: auto;
+        }
+
+        .ai-message {
+            text-align: right;
+        }
+
+        .ai-message .message-bubble {
+            background: #28a745;
+            color: white;
+            padding: 12px 18px;
+            border-radius: 18px 18px 18px 4px;
+            display: inline-block;
+            max-width: 70%;
+            margin-right: auto;
+        }
+
+        .message-meta {
+            font-size: 0.8em;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+
+        .ai-generated {
+            background: #28a745 !important;
+        }
+
+        .fallback {
+            background: #ffc107 !important;
+            color: #000 !important;
+        }
+
+        .contextual-badge {
+            background: #17a2b8;
+            color: white;
+            font-size: 0.7em;
+            padding: 2px 6px;
+            border-radius: 10px;
+            margin-left: 5px;
+        }
+
+        .stats-card {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            text-align: center;
+            padding: 20px;
+            border-radius: 15px;
+        }
+
+        .stats-number {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+
+        .btn-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+            transition: transform 0.2s;
+        }
+
+        .btn-gradient:hover {
+            transform: translateY(-2px);
+            color: white;
+        }
+
+        .scenario-btn {
+            margin: 5px;
+        }
+
+        .conversation-info {
+            background: #e9ecef;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .loading-spinner {
+            display: none;
+        }
+
+        .loading .loading-spinner {
+            display: inline-block;
+        }
+
+        .analytics-chart {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .conversation-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .conversation-item {
+            padding: 10px;
+            border-bottom: 1px solid #e9ecef;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .conversation-item:hover {
+            background: #f8f9fa;
+        }
+
+        .active-conversation {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center text-white mb-4">
+            <i class="fas fa-robot"></i> اختبار المحادثات مع الذاكرة
+        </h1>
+
+        <div class="row">
+            <!-- محاكي المحادثة -->
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-comments"></i> محاكي المحادثة
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- معلومات المحادثة -->
+                        <div id="conversationInfo" class="conversation-info" style="display: none;">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <strong>رقم الهاتف:</strong> <span id="currentPhoneNumber">-</span>
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>عدد الرسائل:</strong> <span id="messageCount">0</span>
+                                </div>
+                            </div>
+                            <div class="row mt-2">
+                                <div class="col-md-6">
+                                    <strong>مدة المحادثة:</strong> <span id="conversationDuration">-</span>
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>الحالة:</strong> 
+                                    <span id="conversationStatus" class="badge bg-success">نشطة</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- حاوية المحادثة -->
+                        <div id="chatContainer" class="chat-container">
+                            <div class="text-center text-muted">
+                                <i class="fas fa-comment-dots fa-3x mb-3"></i>
+                                <p>ابدأ محادثة جديدة أدناه</p>
+                            </div>
+                        </div>
+
+                        <!-- نموذج إرسال الرسائل -->
+                        <div class="mt-3">
+                            <div class="row">
+                                <div class="col-md-4 mb-2">
+                                    <input type="text" id="phoneNumber" class="form-control" 
+                                           placeholder="رقم الهاتف (مثال: 212600000000)" 
+                                           value="212600000001">
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <input type="text" id="messageInput" class="form-control" 
+                                           placeholder="اكتب رسالتك هنا...">
+                                </div>
+                                <div class="col-md-2 mb-2">
+                                    <button id="sendMessage" class="btn btn-gradient w-100">
+                                        <span class="loading-spinner spinner-border spinner-border-sm me-2"></span>
+                                        إرسال
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- أزرار السيناريوهات -->
+                        <div class="mt-3">
+                            <h6>اختبار سيناريوهات جاهزة:</h6>
+                            <button class="btn btn-outline-primary scenario-btn" data-scenario="customer_inquiry">
+                                استفسار عميل
+                            </button>
+                            <button class="btn btn-outline-warning scenario-btn" data-scenario="price_negotiation">
+                                تفاوض السعر
+                            </button>
+                            <button class="btn btn-outline-info scenario-btn" data-scenario="support_request">
+                                طلب دعم
+                            </button>
+                            <button id="clearConversation" class="btn btn-outline-danger">
+                                مسح المحادثة
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- اختبار الرسائل المتعددة -->
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="fas fa-layer-group"></i> اختبار رسائل متعددة
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <textarea id="multipleMessages" class="form-control" rows="3" 
+                                          placeholder="أدخل عدة رسائل، كل رسالة في سطر منفصل&#10;مثال:&#10;السلام عليكم&#10;بغيت نعرف المنتجات&#10;شحال الثمن؟"></textarea>
+                            </div>
+                            <div class="col-md-4">
+                                <button id="sendMultipleMessages" class="btn btn-gradient w-100 h-100">
+                                    <span class="loading-spinner spinner-border spinner-border-sm me-2"></span>
+                                    إرسال متعدد
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- الإحصائيات والتحكم -->
+            <div class="col-lg-4">
+                <!-- إحصائيات سريعة -->
+                <div class="row">
+                    <div class="col-6 mb-3">
+                        <div class="stats-card">
+                            <div class="stats-number" id="totalMessages">0</div>
+                            <div>إجمالي الرسائل</div>
+                        </div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="stats-card">
+                            <div class="stats-number" id="aiResponses">0</div>
+                            <div>ردود الذكاء الاصطناعي</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- المحادثات النشطة -->
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">
+                            <i class="fas fa-users"></i> المحادثات النشطة
+                        </h6>
+                        <button id="refreshConversations" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-sync"></i>
+                        </button>
+                    </div>
+                    <div class="card-body p-0">
+                        <div id="conversationsList" class="conversation-list">
+                            <div class="text-center p-3 text-muted">
+                                <i class="fas fa-hourglass-half"></i>
+                                <p class="mt-2">جاري التحميل...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- تحليلات -->
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="fas fa-chart-bar"></i> تحليلات المحادثة
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-2">
+                            <strong>معدل نجاح الذكاء الاصطناعي:</strong>
+                            <span id="successRate" class="badge bg-success">0%</span>
+                        </div>
+                        <div class="mb-2">
+                            <strong>الردود السياقية:</strong>
+                            <span id="contextualRate" class="badge bg-info">0%</span>
+                        </div>
+                        <div class="mb-2">
+                            <strong>متوسط طول المحادثة:</strong>
+                            <span id="avgConversationLength" class="badge bg-warning">0</span>
+                        </div>
+                        <div>
+                            <strong>وقت الاستجابة:</strong>
+                            <span id="avgResponseTime" class="badge bg-secondary">0ms</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- أدوات -->
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="fas fa-tools"></i> أدوات
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <button id="cleanupOldConversations" class="btn btn-warning w-100 mb-2">
+                            <i class="fas fa-broom"></i> تنظيف المحادثات القديمة
+                        </button>
+                        <button id="exportConversations" class="btn btn-info w-100 mb-2">
+                            <i class="fas fa-download"></i> تصدير المحادثات
+                        </button>
+                        <button id="viewAnalytics" class="btn btn-secondary w-100">
+                            <i class="fas fa-chart-line"></i> عرض التحليلات المفصلة
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- تحليلات مفصلة (مخفية افتراضياً) -->
+        <div id="detailedAnalytics" class="analytics-chart" style="display: none;">
+            <h4>التحليلات المفصلة</h4>
+            <div class="row">
+                <div class="col-md-6">
+                    <canvas id="messagesChart" width="400" height="200"></canvas>
+                </div>
+                <div class="col-md-6">
+                    <canvas id="responseTypesChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal للتحليلات -->
+    <div class="modal fade" id="analyticsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">التحليلات المفصلة</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="analyticsContent">
+                        <!-- سيتم ملؤه بـ JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // متغيرات عامة
+        let currentPhoneNumber = '';
+        let conversationMessages = [];
+        let stats = {
+            totalMessages: 0,
+            aiResponses: 0,
+            contextualResponses: 0,
+            averageResponseTime: 0
+        };
+
+        // تهيئة الصفحة
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeEventListeners();
+            loadActiveConversations();
+            loadAnalytics();
+        });
+
+        // إعداد مستمعي الأحداث
+        function initializeEventListeners() {
+            // إرسال رسالة مفردة
+            document.getElementById('sendMessage').addEventListener('click', sendSingleMessage);
+            document.getElementById('messageInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    sendSingleMessage();
+                }
+            });
+
+            // إرسال رسائل متعددة
+            document.getElementById('sendMultipleMessages').addEventListener('click', sendMultipleMessages);
+
+            // السيناريوهات
+            document.querySelectorAll('.scenario-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    runScenario(this.dataset.scenario);
+                });
+            });
+
+            // مسح المحادثة
+            document.getElementById('clearConversation').addEventListener('click', clearCurrentConversation);
+
+            // تحديث المحادثات
+            document.getElementById('refreshConversations').addEventListener('click', loadActiveConversations);
+
+            // الأدوات
+            document.getElementById('cleanupOldConversations').addEventListener('click', cleanupOldConversations);
+            document.getElementById('exportConversations').addEventListener('click', exportConversations);
+            document.getElementById('viewAnalytics').addEventListener('click', showDetailedAnalytics);
+        }
+
+        // إرسال رسالة مفردة
+        async function sendSingleMessage() {
+            const phoneNumber = document.getElementById('phoneNumber').value.trim();
+            const message = document.getElementById('messageInput').value.trim();
+
+            if (!phoneNumber || !message) {
+                alert('يرجى إدخال رقم الهاتف والرسالة');
+                return;
+            }
+
+            setLoading('sendMessage', true);
+
+            try {
+                const response = await fetch('/api/conversation-test/test-conversation', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        phoneNumber: phoneNumber,
+                        message: message,
+                        customerInfo: {
+                            name: 'عميل تجريبي'
+                        }
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    addMessageToChat('user', message);
+                    addMessageToChat('ai', data.result.response, {
+                        aiGenerated: data.result.aiGenerated,
+                        contextual: data.result.contextual,
+                        language: data.result.language,
+                        productUsed: data.result.productUsed
+                    });
+
+                    updateConversationInfo(phoneNumber, data.conversationInfo);
+                    updateStats(data.result);
+                    
+                    // مسح حقل الإدخال
+                    document.getElementById('messageInput').value = '';
+                } else {
+                    alert('خطأ: ' + data.message);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('حدث خطأ في الاتصال');
+            }
+
+            setLoading('sendMessage', false);
+        }
+
+        // إرسال رسائل متعددة
+        async function sendMultipleMessages() {
+            const phoneNumber = document.getElementById('phoneNumber').value.trim();
+            const messagesText = document.getElementById('multipleMessages').value.trim();
+
+            if (!phoneNumber || !messagesText) {
+                alert('يرجى إدخال رقم الهاتف والرسائل');
+                return;
+            }
+
+            const messages = messagesText.split('\n').filter(msg => msg.trim() !== '');
+
+            setLoading('sendMultipleMessages', true);
+
+            try {
+                const response = await fetch('/api/conversation-test/test-multi-message', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        phoneNumber: phoneNumber,
+                        messages: messages,
+                        customerInfo: {
+                            name: 'عميل تجريبي متعدد'
+                        }
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // إضافة كل رسالة ورد للمحادثة
+                    data.results.forEach(result => {
+                        addMessageToChat('user', result.userMessage);
+                        addMessageToChat('ai', result.aiResponse, {
+                            aiGenerated: result.aiGenerated,
+                            contextual: result.contextual,
+                            language: result.language,
+                            productUsed: result.productUsed
+                        });
+                        
+                        updateStats(result);
+                    });
+
+                    updateConversationInfo(phoneNumber, data.conversationSummary);
+                    
+                    // مسح النص
+                    document.getElementById('multipleMessages').value = '';
+                } else {
+                    alert('خطأ: ' + data.message);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('حدث خطأ في الاتصال');
+            }
+
+            setLoading('sendMultipleMessages', false);
+        }
+
+        // تشغيل سيناريو
+        async function runScenario(scenarioType) {
+            const phoneNumber = document.getElementById('phoneNumber').value.trim() || '212600000001';
+            
+            // إضافة طابع زمني لجعل كل سيناريو فريد
+            const uniquePhone = phoneNumber + '_' + Date.now();
+
+            setLoading('sendMessage', true);
+
+            try {
+                const response = await fetch('/api/conversation-test/test-scenario', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        scenario: scenarioType,
+                        phoneNumber: uniquePhone
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // مسح المحادثة الحالية
+                    clearChatContainer();
+                    
+                    // إضافة رسائل السيناريو
+                    data.results.forEach((result, index) => {
+                        setTimeout(() => {
+                            addMessageToChat('user', result.userMessage);
+                            setTimeout(() => {
+                                addMessageToChat('ai', result.aiResponse, {
+                                    aiGenerated: result.aiGenerated,
+                                    contextual: result.contextual
+                                });
+                                updateStats(result);
+                            }, 500);
+                        }, index * 1500);
+                    });
+
+                    updateConversationInfo(uniquePhone, null);
+                } else {
+                    alert('خطأ: ' + data.message);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('حدث خطأ في الاتصال');
+            }
+
+            setLoading('sendMessage', false);
+        }
+
+        // إضافة رسالة للمحادثة
+        function addMessageToChat(sender, message, metadata = {}) {
+            const chatContainer = document.getElementById('chatContainer');
+            
+            // إزالة رسالة "ابدأ محادثة" إذا كانت موجودة
+            if (chatContainer.children.length === 1 && chatContainer.firstElementChild.classList.contains('text-center')) {
+                chatContainer.innerHTML = '';
+            }
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}-message`;
+            
+            let bubbleClass = 'message-bubble';
+            if (sender === 'ai') {
+                if (metadata.aiGenerated) {
+                    bubbleClass += ' ai-generated';
+                } else {
+                    bubbleClass += ' fallback';
+                }
+            }
+
+            let metaInfo = '';
+            if (sender === 'ai' && metadata) {
+                const badges = [];
+                if (metadata.contextual) badges.push('<span class="contextual-badge">سياقي</span>');
+                if (metadata.language) badges.push(`<span class="badge bg-info">${metadata.language}</span>`);
+                if (metadata.productUsed) badges.push(`<span class="badge bg-success">${metadata.productUsed}</span>`);
+                
+                metaInfo = `<div class="message-meta">${badges.join(' ')}</div>`;
+            }
+
+            messageDiv.innerHTML = `
+                <div class="${bubbleClass}">${message}</div>
+                ${metaInfo}
+            `;
+
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+
+            conversationMessages.push({
+                sender,
+                message,
+                metadata,
+                timestamp: new Date()
+            });
+        }
+
+        // تحديث معلومات المحادثة
+        function updateConversationInfo(phoneNumber, conversationInfo) {
+            currentPhoneNumber = phoneNumber;
+            document.getElementById('currentPhoneNumber').textContent = phoneNumber;
+            document.getElementById('conversationInfo').style.display = 'block';
+
+            if (conversationInfo) {
+                document.getElementById('messageCount').textContent = conversationInfo.messageCount || conversationMessages.length;
+                document.getElementById('conversationDuration').textContent = conversationInfo.duration || 'جديدة';
+                document.getElementById('conversationStatus').textContent = conversationInfo.isActive ? 'نشطة' : 'خاملة';
+                document.getElementById('conversationStatus').className = conversationInfo.isActive ? 'badge bg-success' : 'badge bg-secondary';
+            } else {
+                document.getElementById('messageCount').textContent = conversationMessages.length;
+                document.getElementById('conversationDuration').textContent = 'جديدة';
+            }
+        }
+
+        // تحديث الإحصائيات
+        function updateStats(result) {
+            stats.totalMessages++;
+            if (result.aiGenerated) stats.aiResponses++;
+            if (result.contextual) stats.contextualResponses++;
+
+            document.getElementById('totalMessages').textContent = stats.totalMessages;
+            document.getElementById('aiResponses').textContent = stats.aiResponses;
+
+            // حساب المعدلات
+            const successRate = stats.totalMessages > 0 ? 
+                Math.round((stats.aiResponses / stats.totalMessages) * 100) : 0;
+            document.getElementById('successRate').textContent = successRate + '%';
+
+            const contextualRate = stats.aiResponses > 0 ? 
+                Math.round((stats.contextualResponses / stats.aiResponses) * 100) : 0;
+            document.getElementById('contextualRate').textContent = contextualRate + '%';
+        }
+
+        // مسح المحادثة الحالية
+        async function clearCurrentConversation() {
+            if (!currentPhoneNumber) {
+                clearChatContainer();
+                return;
+            }
+
+            try {
+                await fetch(`/api/conversation-test/reset-conversation/${currentPhoneNumber}`, {
+                    method: 'POST'
+                });
+                
+                clearChatContainer();
+                document.getElementById('conversationInfo').style.display = 'none';
+                currentPhoneNumber = '';
+                conversationMessages = [];
+                
+            } catch (error) {
+                console.error('Error clearing conversation:', error);
+            }
+        }
+
+        // مسح حاوية المحادثة
+        function clearChatContainer() {
+            document.getElementById('chatContainer').innerHTML = `
+                <div class="text-center text-muted">
+                    <i class="fas fa-comment-dots fa-3x mb-3"></i>
+                    <p>ابدأ محادثة جديدة أدناه</p>
+                </div>
+            `;
+        }
+
+        // تحميل المحادثات النشطة
+        async function loadActiveConversations() {
+            try {
+                const response = await fetch('/api/conversation-test/active-conversations');
+                const data = await response.json();
+
+                const conversationsList = document.getElementById('conversationsList');
+                
+                if (data.success && data.activeConversations.length > 0) {
+                    conversationsList.innerHTML = '';
+                    
+                    data.activeConversations.forEach(conversation => {
+                        const conversationItem = document.createElement('div');
+                        conversationItem.className = 'conversation-item';
+                        if (conversation.phoneNumber === currentPhoneNumber) {
+                            conversationItem.classList.add('active-conversation');
+                        }
+                        
+                        conversationItem.innerHTML = `
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>${conversation.phoneNumber}</strong><br>
+                                    <small>${conversation.messageCount} رسالة - ${conversation.duration}</small>
+                                </div>
+                                <div>
+                                    ${conversation.isRecent ? '<span class="badge bg-success">حديثة</span>' : ''}
+                                </div>
+                            </div>
+                        `;
+                        
+                        conversationItem.addEventListener('click', () => {
+                            switchToConversation(conversation.phoneNumber);
+                        });
+                        
+                        conversationsList.appendChild(conversationItem);
+                    });
+                } else {
+                    conversationsList.innerHTML = `
+                        <div class="text-center p-3 text-muted">
+                            <i class="fas fa-inbox"></i>
+                            <p class="mt-2">لا توجد محادثات نشطة</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading conversations:', error);
+            }
+        }
+
+        // التبديل إلى محادثة معينة
+        async function switchToConversation(phoneNumber) {
+            try {
+                const response = await fetch(`/api/conversation-test/conversation/${phoneNumber}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    document.getElementById('phoneNumber').value = phoneNumber;
+                    updateConversationInfo(phoneNumber, data.conversation);
+                    
+                    // إعادة بناء المحادثة من البيانات المحفوظة
+                    clearChatContainer();
+                    if (data.conversation.messages) {
+                        data.conversation.messages.forEach(msg => {
+                            addMessageToChat(msg.role === 'user' ? 'user' : 'ai', msg.content);
+                        });
+                    }
+                    
+                    // تحديث قائمة المحادثات لإظهار النشطة
+                    loadActiveConversations();
+                }
+            } catch (error) {
+                console.error('Error switching conversation:', error);
+            }
+        }
+
+        // تنظيف المحادثات القديمة
+        async function cleanupOldConversations() {
+            if (!confirm('هل أنت متأكد من حذف المحادثات القديمة؟')) return;
+
+            try {
+                const response = await fetch('/api/conversation-test/cleanup-conversations', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ olderThanHours: 2 })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    alert(`تم التنظيف بنجاح. المحادثات المتبقية: ${data.remaining.total}`);
+                    loadActiveConversations();
+                }
+            } catch (error) {
+                console.error('Error cleaning up:', error);
+                alert('حدث خطأ في التنظيف');
+            }
+        }
+
+        // تصدير المحادثات
+        function exportConversations() {
+            const exportData = {
+                timestamp: new Date().toISOString(),
+                currentConversation: {
+                    phoneNumber: currentPhoneNumber,
+                    messages: conversationMessages
+                },
+                stats: stats
+            };
+
+            const dataStr = JSON.stringify(exportData, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(dataBlob);
+            link.download = `conversation-export-${new Date().toISOString().slice(0,10)}.json`;
+            link.click();
+        }
+
+        // عرض التحليلات المفصلة
+        async function showDetailedAnalytics() {
+            try {
+                const response = await fetch('/api/conversation-test/analytics');
+                const data = await response.json();
+
+                if (data.success) {
+                    const modal = new bootstrap.Modal(document.getElementById('analyticsModal'));
+                    const content = document.getElementById('analyticsContent');
+                    
+                    content.innerHTML = `
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>إحصائيات المحادثات</h6>
+                                <ul class="list-group">
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>إجمالي المحادثات:</span>
+                                        <strong>${data.conversationAnalytics.total}</strong>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>المحادثات النشطة:</span>
+                                        <strong>${data.conversationAnalytics.active}</strong>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>المحادثات الطويلة:</span>
+                                        <strong>${data.conversationAnalytics.longConversations}</strong>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>متوسط الطول:</span>
+                                        <strong>${data.conversationAnalytics.averageLength}</strong>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>أداء الذكاء الاصطناعي</h6>
+                                <ul class="list-group">
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>معدل النجاح:</span>
+                                        <strong>${data.serviceStats.successRate}</strong>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>متوسط وقت الاستجابة:</span>
+                                        <strong>${Math.round(data.serviceStats.averageResponseTime)}ms</strong>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>معدل التفاعل:</span>
+                                        <strong>${data.insights.engagementRate}</strong>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    `;
+                    
+                    modal.show();
+                }
+            } catch (error) {
+                console.error('Error loading analytics:', error);
+            }
+        }
+
+        // تحميل التحليلات الأساسية
+        async function loadAnalytics() {
+            try {
+                const response = await fetch('/api/conversation-test/analytics');
+                const data = await response.json();
+
+                if (data.success) {
+                    document.getElementById('avgConversationLength').textContent = data.conversationAnalytics.averageLength;
+                    document.getElementById('avgResponseTime').textContent = Math.round(data.serviceStats.averageResponseTime) + 'ms';
+                }
+            } catch (error) {
+                console.error('Error loading analytics:', error);
+            }
+        }
+
+        // إدارة حالة التحميل
+        function setLoading(buttonId, loading) {
+            const button = document.getElementById(buttonId);
+            if (loading) {
+                button.classList.add('loading');
+                button.disabled = true;
+            } else {
+                button.classList.remove('loading');
+                button.disabled = false;
+            }
+        }
+
+        // تحديث دوري للمحادثات النشطة
+        setInterval(loadActiveConversations, 30000); // كل 30 ثانية
+        setInterval(loadAnalytics, 60000); // كل دقيقة
+    </script>
+</body>
+</html>

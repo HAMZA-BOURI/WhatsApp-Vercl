@@ -1,0 +1,483 @@
+<!-- Interface utilisateur pour gérer les confirmations en attente -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des confirmations clients</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        .pending-card {
+            transition: all 0.3s ease;
+            border-left: 4px solid #ffc107;
+        }
+        .pending-card:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .client-info {
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        .waiting-time {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+        .urgent {
+            border-left: 4px solid #dc3545;
+        }
+        .card-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .refresh-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        .arabic-text {
+            direction: rtl;
+            text-align: right;
+            font-family: 'Amiri', serif;
+        }
+        #confirmationMessagesModal .message-option {
+            cursor: pointer;
+            padding: 10px;
+            margin-bottom: 5px;
+            border-radius: 4px;
+            background-color: #f8f9fa;
+        }
+        #confirmationMessagesModal .message-option:hover {
+            background-color: #e9ecef;
+        }
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+        }
+    </style>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap">
+</head>
+<body>
+    <div class="container py-4">
+        <h1 class="mb-4">Gestion des confirmations clients</h1>
+        
+        <div class="d-flex justify-content-between mb-4">
+            <div>
+                <span id="pending-count" class="badge bg-warning me-2">0</span>
+                <span>clients en attente de confirmation</span>
+            </div>
+            <button id="refresh-btn" class="btn btn-outline-primary">
+                <i class="bi bi-arrow-clockwise"></i> Rafraîchir
+            </button>
+        </div>
+        
+        <div id="pending-container" class="row g-3">
+            <!-- Les cartes des clients en attente seront ajoutées ici dynamiquement -->
+            <div class="col-12 text-center py-5 text-muted" id="no-pending-message">
+                <p>Aucun client en attente de confirmation pour le moment.</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Bouton de rafraîchissement flottant -->
+    <button id="floating-refresh-btn" class="btn btn-primary rounded-circle refresh-button">
+        <i class="bi bi-arrow-clockwise"></i>
+    </button>
+    
+    <!-- Modal de confirmation -->
+    <div class="modal fade" id="confirmOrderModal" tabindex="-1" aria-labelledby="confirmOrderModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="confirmOrderModalLabel">Confirmer la commande</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Vous êtes sur le point de confirmer la commande de <strong id="confirm-client-name">Client</strong>.</p>
+                    <form id="confirm-form">
+                        <input type="hidden" id="confirm-phone-number" name="phoneNumber">
+                        <div class="mb-3">
+                            <label for="confirmation-message" class="form-label">Message de confirmation</label>
+                            <textarea class="form-control" id="confirmation-message" rows="3" required></textarea>
+                        </div>
+                        <div class="text-center mb-3">
+                            <button type="button" class="btn btn-outline-secondary" id="show-message-options">
+                                Suggestions de messages
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-success" id="send-confirmation-btn">Confirmer et envoyer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal de rejet -->
+    <div class="modal fade" id="rejectOrderModal" tabindex="-1" aria-labelledby="rejectOrderModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="rejectOrderModalLabel">Rejeter la commande</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Vous êtes sur le point de rejeter la commande de <strong id="reject-client-name">Client</strong>.</p>
+                    <form id="reject-form">
+                        <input type="hidden" id="reject-phone-number" name="phoneNumber">
+                        <div class="mb-3">
+                            <label for="rejection-reason" class="form-label">Raison du rejet (usage interne uniquement)</label>
+                            <textarea class="form-control" id="rejection-reason" rows="2"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="rejection-message" class="form-label">Message au client</label>
+                            <textarea class="form-control" id="rejection-message" rows="3" required></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-danger" id="send-rejection-btn">Rejeter et envoyer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal de suggestions de messages -->
+    <div class="modal fade" id="confirmationMessagesModal" tabindex="-1" aria-labelledby="confirmationMessagesModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="confirmationMessagesModalLabel">Suggestions de messages</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="message-option arabic-text" data-message="تم تأكيد طلبك بنجاح. سيتم توصيل المنتج خلال 3-5 أيام عمل. شكرا لك على ثقتك فينا.">
+                        تم تأكيد طلبك بنجاح. سيتم توصيل المنتج خلال 3-5 أيام عمل. شكرا لك على ثقتك فينا.
+                    </div>
+                    <div class="message-option arabic-text" data-message="شكرا على طلبك! تم تأكيد الطلبية ديالك، وغادي نوصلوها ليك في أقرب وقت ممكن. إيلا عندك شي سؤال آخر، مرحبا بيك.">
+                        شكرا على طلبك! تم تأكيد الطلبية ديالك، وغادي نوصلوها ليك في أقرب وقت ممكن. إيلا عندك شي سؤال آخر، مرحبا بيك.
+                    </div>
+                    <div class="message-option arabic-text" data-message="مبروك! الطلبية ديالك مؤكدة. غادي نبقاو على تواصل معاك بخصوص وقت التوصيل. شكرا بزاف.">
+                        مبروك! الطلبية ديالك مؤكدة. غادي نبقاو على تواصل معاك بخصوص وقت التوصيل. شكرا بزاف.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script JavaScript pour la fonctionnalité de l'interface -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Initialisation des variables globales
+        let pendingConfirmations = [];
+        const API_BASE_URL = '/api/confirmations';
+        
+        // Initialisation Bootstrap des Modals
+        const confirmOrderModal = new bootstrap.Modal(document.getElementById('confirmOrderModal'));
+        const rejectOrderModal = new bootstrap.Modal(document.getElementById('rejectOrderModal'));
+        const confirmationMessagesModal = new bootstrap.Modal(document.getElementById('confirmationMessagesModal'));
+        
+        // Fonction pour charger les confirmations en attente
+        async function loadPendingConfirmations() {
+            try {
+                const response = await fetch(API_BASE_URL);
+                const data = await response.json();
+                
+                if (data.success) {
+                    pendingConfirmations = data.pendingConfirmations || [];
+                    updatePendingConfirmationsUI();
+                } else {
+                    showError('Erreur lors du chargement des confirmations: ' + data.message);
+                }
+            } catch (error) {
+                console.error('Erreur de chargement:', error);
+                showError('Erreur de connexion au serveur');
+            }
+        }
+        
+        // Fonction pour mettre à jour l'interface utilisateur
+        function updatePendingConfirmationsUI() {
+            const pendingContainer = document.getElementById('pending-container');
+            const pendingCount = document.getElementById('pending-count');
+            const noMessageElement = document.getElementById('no-pending-message');
+            
+            // Mettre à jour le compteur
+            pendingCount.textContent = pendingConfirmations.length;
+            
+            // Effacer le contenu actuel
+            pendingContainer.innerHTML = '';
+            
+            if (pendingConfirmations.length === 0) {
+                pendingContainer.appendChild(noMessageElement);
+                return;
+            }
+            
+            // Générer une carte pour chaque client en attente
+            pendingConfirmations.forEach(client => {
+                const card = createClientCard(client);
+                pendingContainer.appendChild(card);
+            });
+        }
+        
+        // Fonction pour créer une carte client
+        function createClientCard(client) {
+            const col = document.createElement('div');
+            col.className = 'col-md-6 col-lg-4';
+            
+            const isUrgent = client.waitingTime > 30; // Plus de 30 minutes d'attente
+            
+            const cardHtml = `
+                <div class="card pending-card ${isUrgent ? 'urgent' : ''}">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            ${client.clientData.name || 'Client sans nom'}
+                            ${isUrgent ? '<span class="badge bg-danger ms-2">Urgent</span>' : ''}
+                        </h5>
+                        <div class="waiting-time mb-2">
+                            <i class="bi bi-clock"></i> En attente depuis ${client.waitingTime} minute${client.waitingTime > 1 ? 's' : ''}
+                        </div>
+                        <div class="client-info">
+                            <p class="mb-1"><strong>Téléphone:</strong> ${formatPhoneNumber(client.phoneNumber)}</p>
+                            ${client.clientData.city ? `<p class="mb-1"><strong>Ville:</strong> ${client.clientData.city}</p>` : ''}
+                            <p class="mb-0"><strong>Reçu le:</strong> ${formatDate(client.timestamp)}</p>
+                        </div>
+                        <div class="card-actions mt-3">
+                            <button class="btn btn-success confirm-btn" data-phone="${client.phoneNumber}" data-name="${client.clientData.name || 'Client'}">
+                                <i class="bi bi-check-lg"></i> Confirmer
+                            </button>
+                            <button class="btn btn-outline-danger reject-btn" data-phone="${client.phoneNumber}" data-name="${client.clientData.name || 'Client'}">
+                                <i class="bi bi-x-lg"></i> Rejeter
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            col.innerHTML = cardHtml;
+            
+            // Ajouter les gestionnaires d'événements
+            col.querySelector('.confirm-btn').addEventListener('click', function() {
+                openConfirmModal(this.dataset.phone, this.dataset.name);
+            });
+            
+            col.querySelector('.reject-btn').addEventListener('click', function() {
+                openRejectModal(this.dataset.phone, this.dataset.name);
+            });
+            
+            return col;
+        }
+        
+        // Fonction pour ouvrir le modal de confirmation
+        function openConfirmModal(phoneNumber, clientName) {
+            document.getElementById('confirm-phone-number').value = phoneNumber;
+            document.getElementById('confirm-client-name').textContent = clientName;
+            document.getElementById('confirmation-message').value = 'تم تأكيد طلبك بنجاح. سيتم التواصل معك قريبًا لتحديد موعد التسليم. شكرا لك على ثقتك فينا.';
+            confirmOrderModal.show();
+        }
+        
+        // Fonction pour ouvrir le modal de rejet
+        function openRejectModal(phoneNumber, clientName) {
+            document.getElementById('reject-phone-number').value = phoneNumber;
+            document.getElementById('reject-client-name').textContent = clientName;
+            document.getElementById('rejection-message').value = 'نعتذر، ولكن لا يمكننا تأكيد طلبك في الوقت الحالي. سنتواصل معك لاحقاً.';
+            rejectOrderModal.show();
+        }
+        
+        // Fonction pour envoyer une confirmation
+        async function sendConfirmation(phoneNumber, message) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/confirm/${phoneNumber}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        message,
+                        status: 'confirmed'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showSuccess('Confirmation envoyée avec succès');
+                    confirmOrderModal.hide();
+                    await loadPendingConfirmations(); // Recharger la liste
+                } else {
+                    showError('Erreur lors de l\'envoi de la confirmation: ' + data.message);
+                }
+            } catch (error) {
+                console.error('Erreur d\'envoi:', error);
+                showError('Erreur de connexion au serveur');
+            }
+        }
+        
+        // Fonction pour envoyer un rejet
+        async function sendRejection(phoneNumber, message, reason) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/reject/${phoneNumber}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        message,
+                        reason
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showSuccess('Rejet envoyé avec succès');
+                    rejectOrderModal.hide();
+                    await loadPendingConfirmations(); // Recharger la liste
+                } else {
+                    showError('Erreur lors de l\'envoi du rejet: ' + data.message);
+                }
+            } catch (error) {
+                console.error('Erreur d\'envoi:', error);
+                showError('Erreur de connexion au serveur');
+            }
+        }
+        
+        // Fonction pour formater un numéro de téléphone
+        function formatPhoneNumber(phoneNumber) {
+            // Formater les numéros marocains pour l'affichage
+            if (phoneNumber.startsWith('212') && phoneNumber.length >= 12) {
+                return `+${phoneNumber.substring(0, 3)} ${phoneNumber.substring(3, 5)} ${phoneNumber.substring(5, 7)} ${phoneNumber.substring(7, 9)} ${phoneNumber.substring(9)}`;
+            }
+            return phoneNumber;
+        }
+        
+        // Fonction pour formater une date
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleString('fr-FR', { 
+                day: '2-digit', 
+                month: '2-digit', 
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+        
+        // Fonction pour afficher un message de succès
+        function showSuccess(message) {
+            // Créer un toast Bootstrap
+            const toastContainer = document.createElement('div');
+            toastContainer.className = 'position-fixed bottom-0 end-0 p-3';
+            toastContainer.style.zIndex = '9999';
+            
+            toastContainer.innerHTML = `
+                <div class="toast align-items-center text-white bg-success" role="alert" aria-live="assertive" aria-atomic="true">
+                    <div class="d-flex">
+                        <div class="toast-body">
+                            <i class="bi bi-check-circle me-2"></i> ${message}
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Fermer"></button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(toastContainer);
+            const toast = new bootstrap.Toast(toastContainer.querySelector('.toast'));
+            toast.show();
+            
+            // Supprimer après disparition
+            setTimeout(() => {
+                document.body.removeChild(toastContainer);
+            }, 5000);
+        }
+        
+        // Fonction pour afficher un message d'erreur
+        function showError(message) {
+            // Créer un toast Bootstrap
+            const toastContainer = document.createElement('div');
+            toastContainer.className = 'position-fixed bottom-0 end-0 p-3';
+            toastContainer.style.zIndex = '9999';
+            
+            toastContainer.innerHTML = `
+                <div class="toast align-items-center text-white bg-danger" role="alert" aria-live="assertive" aria-atomic="true">
+                    <div class="d-flex">
+                        <div class="toast-body">
+                            <i class="bi bi-exclamation-triangle me-2"></i> ${message}
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Fermer"></button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(toastContainer);
+            const toast = new bootstrap.Toast(toastContainer.querySelector('.toast'));
+            toast.show();
+            
+            // Supprimer après disparition
+            setTimeout(() => {
+                document.body.removeChild(toastContainer);
+            }, 5000);
+        }
+        
+        // Gestionnaires d'événements
+        document.addEventListener('DOMContentLoaded', function() {
+            // Charger les confirmations au chargement de la page
+            loadPendingConfirmations();
+            
+            // Boutons de rafraîchissement
+            document.getElementById('refresh-btn').addEventListener('click', loadPendingConfirmations);
+            document.getElementById('floating-refresh-btn').addEventListener('click', loadPendingConfirmations);
+            
+            // Bouton de suggestions de messages
+            document.getElementById('show-message-options').addEventListener('click', function() {
+                confirmationMessagesModal.show();
+            });
+            
+            // Sélection d'un message suggéré
+            document.querySelectorAll('#confirmationMessagesModal .message-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    const message = this.dataset.message;
+                    document.getElementById('confirmation-message').value = message;
+                    confirmationMessagesModal.hide();
+                });
+            });
+            
+            // Bouton d'envoi de confirmation
+            document.getElementById('send-confirmation-btn').addEventListener('click', function() {
+                const phoneNumber = document.getElementById('confirm-phone-number').value;
+                const message = document.getElementById('confirmation-message').value;
+                
+                if (!message.trim()) {
+                    alert('Veuillez entrer un message de confirmation');
+                    return;
+                }
+                
+                sendConfirmation(phoneNumber, message);
+            });
+            
+            // Bouton d'envoi de rejet
+            document.getElementById('send-rejection-btn').addEventListener('click', function() {
+                const phoneNumber = document.getElementById('reject-phone-number').value;
+                const message = document.getElementById('rejection-message').value;
+                const reason = document.getElementById('rejection-reason').value;
+                
+                if (!message.trim()) {
+                    alert('Veuillez entrer un message de rejet');
+                    return;
+                }
+                
+                sendRejection(phoneNumber, message, reason);
+            });
+            
+            // Rafraîchissement automatique toutes les 2 minutes
+            setInterval(loadPendingConfirmations, 120000);
+        });
+    </script>
+</body>
+</html>

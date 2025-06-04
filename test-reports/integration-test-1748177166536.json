@@ -1,0 +1,124 @@
+{
+  "summary": {
+    "totalTests": 18,
+    "passedTests": 12,
+    "failedTests": 6,
+    "successRate": "66.7%",
+    "timestamp": "2025-05-25T12:46:06.535Z"
+  },
+  "results": [
+    {
+      "name": "Server Health Check",
+      "passed": true,
+      "details": "Server is healthy",
+      "timestamp": "2025-05-25T12:45:34.208Z"
+    },
+    {
+      "name": "Google Sheets Status",
+      "passed": true,
+      "details": "Service available",
+      "timestamp": "2025-05-25T12:45:34.226Z"
+    },
+    {
+      "name": "Google Sheets Connection",
+      "passed": true,
+      "details": "Connection successful",
+      "timestamp": "2025-05-25T12:45:35.930Z"
+    },
+    {
+      "name": "Google Sheets Add Client",
+      "passed": true,
+      "details": "Client added successfully",
+      "timestamp": "2025-05-25T12:45:36.692Z"
+    },
+    {
+      "name": "Client Extraction: Complete Arabic Info",
+      "passed": false,
+      "details": "Data mismatch",
+      "timestamp": "2025-05-25T12:45:36.708Z"
+    },
+    {
+      "name": "Client Extraction: Darija Mixed Info",
+      "passed": false,
+      "details": "Data mismatch",
+      "timestamp": "2025-05-25T12:45:36.775Z"
+    },
+    {
+      "name": "Client Extraction: French Info",
+      "passed": false,
+      "details": "Data mismatch",
+      "timestamp": "2025-05-25T12:45:36.788Z"
+    },
+    {
+      "name": "Client Extraction: Partial Info",
+      "passed": false,
+      "details": "Extraction failed",
+      "timestamp": "2025-05-25T12:45:36.800Z"
+    },
+    {
+      "name": "Client Extraction: Phone Only",
+      "passed": false,
+      "details": "Data mismatch",
+      "timestamp": "2025-05-25T12:45:36.810Z"
+    },
+    {
+      "name": "Agent Stats",
+      "passed": true,
+      "details": "Stats retrieved successfully",
+      "timestamp": "2025-05-25T12:45:36.885Z"
+    },
+    {
+      "name": "Agent Conversations",
+      "passed": true,
+      "details": "Conversations retrieved",
+      "timestamp": "2025-05-25T12:45:36.901Z"
+    },
+    {
+      "name": "Scenario: Complete Order Flow",
+      "passed": false,
+      "details": "socket hang up",
+      "timestamp": "2025-05-25T12:45:41.925Z"
+    },
+    {
+      "name": "Scenario: Gradual Info Collection",
+      "passed": true,
+      "details": "AI: 5/5, Contextual: 5",
+      "timestamp": "2025-05-25T12:45:53.408Z"
+    },
+    {
+      "name": "Scenario: Phone Confirmation Flow",
+      "passed": true,
+      "details": "AI: 5/5, Contextual: 5",
+      "timestamp": "2025-05-25T12:46:04.541Z"
+    },
+    {
+      "name": "WhatsApp Status",
+      "passed": true,
+      "details": "Connected: false",
+      "timestamp": "2025-05-25T12:46:04.550Z"
+    },
+    {
+      "name": "WhatsApp Connection",
+      "passed": true,
+      "details": "Service available but not connected (expected)",
+      "timestamp": "2025-05-25T12:46:04.551Z"
+    },
+    {
+      "name": "Full Integration Flow",
+      "passed": true,
+      "details": "Client processed and saved",
+      "timestamp": "2025-05-25T12:46:06.290Z"
+    },
+    {
+      "name": "Client Retrieval",
+      "passed": true,
+      "details": "Retrieved 4 clients",
+      "timestamp": "2025-05-25T12:46:06.524Z"
+    }
+  ],
+  "environment": {
+    "baseUrl": "http://localhost:5000",
+    "nodeVersion": "v19.8.1",
+    "platform": "win32"
+  }
+}

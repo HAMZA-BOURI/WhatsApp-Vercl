@@ -1,0 +1,30 @@
+{
+    "version": 2,
+    "builds": [
+      {
+        "src": "vercel.js",
+        "use": "@vercel/node"
+      },
+      {
+        "src": "public/**",
+        "use": "@vercel/static"
+      }
+    ],
+    "routes": [
+      {
+        "src": "/api/(.*)",
+        "dest": "vercel.js"
+      },
+      {
+        "src": "/(.*\\.(js|css|jpg|jpeg|png|gif|ico|svg|webp))",
+        "dest": "public/$1"
+      },
+      {
+        "src": "/(.*)",
+        "dest": "vercel.js"
+      }
+    ],
+    "env": {
+      "NODE_ENV": "production"
+    }
+  }

@@ -1,0 +1,52 @@
+{
+  "name": "whatsapp-bot",
+  "version": "1.0.0",
+  "description": "Bot WhatsApp automatique pour répondre aux clients avec interface d'administration",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "vercel-build": "node vercel-build.js",
+    "setup": "mkdir -p public/media/images && mkdir -p public/media/videos && mkdir -p public/media/audio && mkdir -p config && echo 'Configuration initiale terminée'",
+    "test": "node tests/run_tests.js",
+    "test:ai": "node tests/test_ai_integration.js",
+    "test:gemini": "node tests/test-gemini.js",
+    "vercel-dev": "vercel dev",
+    "deploy:vercel": "vercel",
+    "deploy:vercel:prod": "vercel --prod"
+  },
+  "keywords": [
+    "whatsapp",
+    "bot",
+    "mern",
+    "mongodb",
+    "express",
+    "react",
+    "nodejs"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.9.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "googleapis": "^148.0.0",
+    "mongoose": "^8.14.1",
+    "multer": "^1.4.5-lts.1",
+    "puppeteer": "^22.8.2",
+    "qrcode-terminal": "^0.12.0",
+    "whatsapp-web.js": "^1.23.0",
+    "ws": "^8.17.1"
+  },
+  "devDependencies": {
+    "chai": "^5.2.0",
+    "mocha": "^11.2.2",
+    "nodemon": "^3.1.0",
+    "sinon": "^20.0.0",
+    "supertest": "^7.1.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

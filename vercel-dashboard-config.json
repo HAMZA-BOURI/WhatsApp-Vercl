@@ -1,0 +1,47 @@
+{
+    "buildCommand": "npm run vercel-build",
+    "outputDirectory": "public",
+    "devCommand": "npm run vercel-dev",
+    "framework": "node",
+    "installCommand": "npm install",
+    "regions": ["cdg1"],
+    "env": {
+      "MONGO_URI": {
+        "description": "MongoDB connection string",
+        "required": true
+      },
+      "GEMINI_API_KEY": {
+        "description": "Google Gemini API key for AI processing",
+        "required": true
+      },
+      "GEMINI_API_URL": {
+        "description": "Google Gemini API URL",
+        "value": "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent",
+        "required": false
+      },
+      "WHATSAPP_API_URL": {
+        "description": "URL to your self-hosted WhatsApp server",
+        "required": false
+      },
+      "WHATSAPP_API_KEY": {
+        "description": "API key for WhatsApp server authentication",
+        "required": false
+      },
+      "GOOGLE_SHEETS_SPREADSHEET_ID": {
+        "description": "Google Sheets spreadsheet ID for client information",
+        "required": false
+      },
+      "GOOGLE_SERVICE_ACCOUNT_EMAIL": {
+        "description": "Google service account email for Sheets API",
+        "required": false
+      },
+      "GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY": {
+        "description": "Google service account private key for Sheets API",
+        "required": false
+      },
+      "NODE_ENV": {
+        "description": "Environment mode (development/production)",
+        "value": "production"
+      }
+    }
+  }
