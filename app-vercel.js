@@ -15,12 +15,25 @@ const productRoutes = require('./routes/products');
 const categoryRoutes = require('./routes/categories');
 const aiRoutes = require('./routes/ai');
 const apiTestRoutes = require('./routes/api-test');
-const clientRoutes = require('./routes/clients');
+const clientRoutes = require('./routes/clients-vercel');
 const clientDetectionRoutes = require('./routes/client-detection');
 const gatewayRoutes = require('./routes/gateway');
 
 // Models
 const Customer = require('./models/Customer');
+
+// Suppress initialization logs in Vercel environment
+console.log = function() {
+  // Only log in development environment
+  if (process.env.NODE_ENV !== 'production') {
+    console.info.apply(console, arguments);
+  }
+};
+
+console.error = function() {
+  // Always log errors
+  console.info.apply(console, arguments);
+};
 
 const app = express();
 
